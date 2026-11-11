@@ -83,7 +83,9 @@ jobs:
           set -euo pipefail
           # Mask the complete input strings before any downloader can echo an error containing them.
           echo "::add-mask::$BASE_NSP_URL"
-          echo "::add-mask::$UPDATE_NSP_URL"
+          if [[ -n "$UPDATE_NSP_URL" ]]; then
+            echo "::add-mask::$UPDATE_NSP_URL"
+          fi
           echo "::add-mask::$KEYS_ZIP_URL"
 
           python - <<'PY'
@@ -103,14 +105,15 @@ jobs:
           PY
 
           mkdir -p "$RUNNER_TEMP/nxnative-input/game" "$RUNNER_TEMP/nxnative-input/keys"
-          curl --fail --location --silent --show-error --retry 3 --retry-delay 2 \
-            "$BASE_NSP_URL" --output "$RUNNER_TEMP/nxnative-input/game/base.nsp"
+          # Use the same curl options as the known-working ZIP downloader.
+          curl -fL --retry 5 --retry-all-errors --connect-timeout 30 -sS \
+            -o "$RUNNER_TEMP/nxnative-input/game/base.nsp" "$BASE_NSP_URL"
           if [[ -n "$UPDATE_NSP_URL" ]]; then
-            curl --fail --location --silent --show-error --retry 3 --retry-delay 2 \
-              "$UPDATE_NSP_URL" --output "$RUNNER_TEMP/nxnative-input/game/update.nsp"
+            curl -fL --retry 5 --retry-all-errors --connect-timeout 30 -sS \
+              -o "$RUNNER_TEMP/nxnative-input/game/update.nsp" "$UPDATE_NSP_URL"
           fi
-          curl --fail --location --silent --show-error --retry 3 --retry-delay 2 \
-            "$KEYS_ZIP_URL" --output "$RUNNER_TEMP/nxnative-input/keys/keys.zip"
+          curl -fL --retry 5 --retry-all-errors --connect-timeout 30 -sS \
+            -o "$RUNNER_TEMP/nxnative-input/keys/keys.zip" "$KEYS_ZIP_URL"
 
           # Extract only the two requested key files; never unpack arbitrary ZIP paths into the workspace.
           python - <<'PY'
