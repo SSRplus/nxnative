@@ -162,6 +162,11 @@ jobs:
           if [[ -d "$RUNNER_TEMP/nxnative-input/game" ]]; then
             find "$RUNNER_TEMP/nxnative-input/game" -maxdepth 2 -type f -name '*.ipa' \
               -exec cp -f {} "$RUNNER_TEMP/nxnative-output/" \; 2>/dev/null || true
+            # TrollStore accepts the same unsigned IPA package with the .tipa extension.
+            for ipa in "$RUNNER_TEMP/nxnative-output/"*.ipa; do
+              [[ -f "$ipa" ]] || continue
+              cp -f "$ipa" "${ipa%.ipa}.tipa"
+            done
             find "$RUNNER_TEMP/nxnative-input/game" -maxdepth 2 -type d -name '*_build' \
               -exec sh -c 'mkdir -p "$1/$(basename "$2")"; if [ -d "$2/logs" ]; then cp -R "$2/logs" "$1/$(basename "$2")/"; fi' _ "$RUNNER_TEMP/nxnative-output" {} \; 2>/dev/null || true
             find "$RUNNER_TEMP/nxnative-input/game" -maxdepth 2 -type d -name '*_survey' \
