@@ -47,7 +47,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: '3.14'
 
       - name: Validate toolchain
         run: |
@@ -159,12 +159,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/nxnative-output"
-          find "$RUNNER_TEMP/nxnative-input/game" -maxdepth 2 -type f -name '*.ipa' \
-            -exec cp -f {} "$RUNNER_TEMP/nxnative-output/" \; 2>/dev/null || true
-          find "$RUNNER_TEMP/nxnative-input/game" -maxdepth 2 -type d -name '*_build' \
-            -exec sh -c 'mkdir -p "$1/$(basename "$2")"; if [ -d "$2/logs" ]; then cp -R "$2/logs" "$1/$(basename "$2")/"; fi' _ "$RUNNER_TEMP/nxnative-output" {} \;
-          find "$RUNNER_TEMP/nxnative-input/game" -maxdepth 2 -type d -name '*_survey' \
-            -exec cp -R {} "$RUNNER_TEMP/nxnative-output/" \; 2>/dev/null || true
+          if [[ -d "$RUNNER_TEMP/nxnative-input/game" ]]; then
+            find "$RUNNER_TEMP/nxnative-input/game" -maxdepth 2 -type f -name '*.ipa' \
+              -exec cp -f {} "$RUNNER_TEMP/nxnative-output/" \; 2>/dev/null || true
+            find "$RUNNER_TEMP/nxnative-input/game" -maxdepth 2 -type d -name '*_build' \
+              -exec sh -c 'mkdir -p "$1/$(basename "$2")"; if [ -d "$2/logs" ]; then cp -R "$2/logs" "$1/$(basename "$2")/"; fi' _ "$RUNNER_TEMP/nxnative-output" {} \; 2>/dev/null || true
+            find "$RUNNER_TEMP/nxnative-input/game" -maxdepth 2 -type d -name '*_survey' \
+              -exec cp -R {} "$RUNNER_TEMP/nxnative-output/" \; 2>/dev/null || true
+          fi
           find "$RUNNER_TEMP/nxnative-output" -maxdepth 3 -type f -print
 
       - name: Upload IPA and build diagnostics
