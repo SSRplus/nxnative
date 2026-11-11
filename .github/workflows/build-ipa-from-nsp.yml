@@ -105,15 +105,24 @@ jobs:
           PY
 
           mkdir -p "$RUNNER_TEMP/nxnative-input/game" "$RUNNER_TEMP/nxnative-input/keys"
-          # Use the same curl options as the known-working ZIP downloader.
-          curl -fL --retry 5 --retry-all-errors --connect-timeout 30 -sS \
-            -o "$RUNNER_TEMP/nxnative-input/game/base.nsp" "$BASE_NSP_URL"
+          # Match the working downloader's direct curl-to-file flow. Some file hosts
+          # reject curl's default user agent, so identify this request as a normal client.
+          download_file() {
+            local url="$1" destination="$2" label="$3"
+            echo "Downloading $label..."
+            curl -fL --retry 5 --retry-all-errors --connect-timeout 30 \
+              --user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/537.36 Chrome/131.0 Safari/537.36" \
+              -sS -o "$destination" "$url"
+            [[ -s "$destination" ]] || { echo "::error::$label download produced an empty file"; return 1; }
+            ls -lh "$destination"
+            file "$destination" | cut -c1-160
+          }
+
+          download_file "$BASE_NSP_URL" "$RUNNER_TEMP/nxnative-input/game/base.nsp" "base NSP"
           if [[ -n "$UPDATE_NSP_URL" ]]; then
-            curl -fL --retry 5 --retry-all-errors --connect-timeout 30 -sS \
-              -o "$RUNNER_TEMP/nxnative-input/game/update.nsp" "$UPDATE_NSP_URL"
+            download_file "$UPDATE_NSP_URL" "$RUNNER_TEMP/nxnative-input/game/update.nsp" "update NSP"
           fi
-          curl -fL --retry 5 --retry-all-errors --connect-timeout 30 -sS \
-            -o "$RUNNER_TEMP/nxnative-input/keys/keys.zip" "$KEYS_ZIP_URL"
+          download_file "$KEYS_ZIP_URL" "$RUNNER_TEMP/nxnative-input/keys/keys.zip" "keys ZIP"
 
           # Extract only the two requested key files; never unpack arbitrary ZIP paths into the workspace.
           python - <<'PY'
